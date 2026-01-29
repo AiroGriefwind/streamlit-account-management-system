@@ -38,6 +38,20 @@ def get_user_id() -> str:
     return "anonymous_user"
 
 
+def load_logs(limit: int = 50) -> list[dict]:
+    if not os.path.exists(LOG_FILE):
+        return []
+    with open(LOG_FILE, "r", encoding="utf-8") as f:
+        lines = [line.strip() for line in f if line.strip()]
+    entries = []
+    for line in lines[-limit:]:
+        try:
+            entries.append(json.loads(line))
+        except json.JSONDecodeError:
+            entries.append({"raw": line, "error": "invalid_json"})
+    return list(reversed(entries))
+
+
 st.set_page_config(page_title="Login-First Demo", page_icon="🔐")
 
 user_id = get_user_id()
@@ -65,3 +79,10 @@ st.divider()
 st.subheader("当前文本")
 st.write(state.get("text", ""))
 
+st.divider()
+st.subheader("Logs（只读）")
+logs = load_logs(limit=50)
+if logs:
+    st.json(logs, expanded=False)
+else:
+    st.caption("暂无日志记录。")
